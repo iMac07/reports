@@ -13,8 +13,8 @@ import org.xersys.commander.iface.XNautilus;
 import org.xersys.commander.iface.XReport;
 import org.xersys.commander.util.SQLUtil;
 
-public class BranchInventory implements XReport{
-    private final String REPORTID = "220004";
+public class PurchaseOrder implements XReport{
+    private final String REPORTID = "220001";
     private final String REPORT_PATH = "/reports/";
     
     private XNautilus p_oNautilus;
@@ -26,7 +26,7 @@ public class BranchInventory implements XReport{
     private JasperPrint _jrprint;
     private LinkedList _rptparam = null;
     
-    public BranchInventory(){
+    public PurchaseOrder(){
         _rptparam = new LinkedList();
         _rptparam.add("store.report.id");
         _rptparam.add("store.report.no");

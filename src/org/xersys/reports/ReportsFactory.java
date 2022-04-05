@@ -4,10 +4,12 @@ import org.xersys.commander.iface.XReport;
 
 public class ReportsFactory {
     public static XReport make(String fsReportID){
-        fsReportID = "RPT" + fsReportID;
-        
         switch (fsReportID) {
-            case "220004": //Branch Invntory
+            case "220001": //Purchase Order
+                return new PurchaseOrder();
+            case "220002": //Delivery Acceptance
+                return new DeliveryAcceptance();
+            case "220004": //Branch Inventory
                 return new BranchInventory();
             default:
                 return null;

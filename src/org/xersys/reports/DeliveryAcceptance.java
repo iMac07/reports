@@ -13,8 +13,8 @@ import org.xersys.commander.iface.XNautilus;
 import org.xersys.commander.iface.XReport;
 import org.xersys.commander.util.SQLUtil;
 
-public class BranchInventory implements XReport{
-    private final String REPORTID = "220004";
+public class DeliveryAcceptance implements XReport{
+    private final String REPORTID = "220002";
     private final String REPORT_PATH = "/reports/";
     
     private XNautilus p_oNautilus;
@@ -26,7 +26,7 @@ public class BranchInventory implements XReport{
     private JasperPrint _jrprint;
     private LinkedList _rptparam = null;
     
-    public BranchInventory(){
+    public DeliveryAcceptance(){
         _rptparam = new LinkedList();
         _rptparam.add("store.report.id");
         _rptparam.add("store.report.no");
@@ -177,21 +177,27 @@ public class BranchInventory implements XReport{
     
     private String getReportSQL(){
         return "SELECT" +
-                    "  b.sBarCodex sField01" +
-                    ", b.sDescript sField02" +
-                    ", c.sDescript sField03" +
-                    ", a.cClassify sField04" +
-                    ", a.nMaxLevel nField01" +
-                    ", a.nMinLevel nField02" +
-                    ", b.nSelPrce1 lField01" +
-                    ", a.nQtyOnHnd nField03" +
-                    ", b.nUnitPrce lField02" +	
-                " FROM Inv_Master a" +
-                    " LEFT JOIN Inventory b ON a.sStockIDx = b.sStockIDx" +
-                    " LEFT JOIN Brand c ON b.sBrandCde = c.sBrandCde AND c.sInvTypCd = 'SP'" +
-                " WHERE a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
-                    " AND a.cRecdStat = '1'" +
-                " ORDER BY a.nQtyOnHnd DESC, c.sDescript, b.sBarCodex, b.sDescript";
+                    "  b.sClientNm sField01" +
+                    ", a.dRefernce sField02" +
+                    ", a.sReferNox sField03" +
+                    ", d.sBarCodex sField04" +
+                    ", d.sDescript sField05" +
+                    ", c.nQuantity nField01" +
+                    ", c.nUnitPrce lField01" +
+                    ", CASE cTranStat" +
+                        " WHEN '0' THEN 'OPEN'" +
+                        " WHEN '1' THEN 'CLOSED'" +
+                        " WHEN '2' THEN 'POSTED'" +
+                        " WHEN '3' THEN 'CANCELLED'" +
+                        " WHEN '4' THEN 'VOID'" +
+                        " END sField06" +
+                    ", a.sTransNox sField07" +
+                " FROM PO_Receiving_Master a" +
+                        " LEFT JOIN Client_Master b ON a.sSupplier = b.sClientID" +
+                    ", PO_Receiving_Detail c" +
+                        " LEFT JOIN Inventory d ON c.sStockIDx = d.sStockIDx" +
+                " WHERE a.sTransNox = c.sTransNox" +
+                    " AND a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd"));
     }
 
     @Override
