@@ -53,4 +53,12 @@ public class DateCriteriaController implements Initializable {
     public boolean isCancelled(){return pbCancelled;}
     
     private boolean pbCancelled = true;
+
+    @FXML
+    private void dateFrom_OnAction(ActionEvent event) {
+    }
+
+    @FXML
+    private void dateThru_OnAction(ActionEvent event) {
+    }
 }
