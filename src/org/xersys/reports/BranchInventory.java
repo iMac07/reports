@@ -157,7 +157,7 @@ public class BranchInventory implements XReport{
         
         //Create the parameter
         Map<String, Object> params = new HashMap<>();
-        params.put("sCompnyNm", "Company Name");  
+        params.put("sCompnyNm", System.getProperty("store.company.name"));  
         params.put("sBranchNm", (String) p_oNautilus.getBranchConfig("sCompnyNm"));
         params.put("sAddressx", (String) p_oNautilus.getBranchConfig("sAddressx") + ", " + (String) p_oNautilus.getBranchConfig("xTownName"));      
         params.put("sReportNm", System.getProperty("store.report.header"));      

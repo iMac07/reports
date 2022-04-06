@@ -1,10 +1,19 @@
 package org.xersys.reports;
 
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import javafx.event.EventHandler;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.input.MouseEvent;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRResultSetDataSource;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -26,6 +35,9 @@ public class PurchaseOrder implements XReport{
     private JasperPrint _jrprint;
     private LinkedList _rptparam = null;
     
+    private double xOffset = 0; 
+    private double yOffset = 0;
+    
     public PurchaseOrder(){
         _rptparam = new LinkedList();
         _rptparam.add("store.report.id");
@@ -39,7 +51,8 @@ public class PurchaseOrder implements XReport{
         _rptparam.add("store.report.criteria.presentation");
         _rptparam.add("store.report.criteria.branch");      
         _rptparam.add("store.report.criteria.group");        
-        _rptparam.add("store.report.criteria.date"); 
+        _rptparam.add("store.report.criteria.date.from"); 
+        _rptparam.add("store.report.criteria.date.thru"); 
         
         _jrprint = null;
         
@@ -125,7 +138,8 @@ public class PurchaseOrder implements XReport{
         System.clearProperty("store.report.criteria.presentation");
         System.clearProperty("store.report.criteria.branch");      
         System.clearProperty("store.report.criteria.group");        
-        System.clearProperty("store.report.criteria.date");   
+        System.clearProperty("store.report.criteria.date.from");   
+        System.clearProperty("store.report.criteria.date.thru");   
     }
     
     private void closeReport(){
@@ -157,7 +171,7 @@ public class PurchaseOrder implements XReport{
         
         //Create the parameter
         Map<String, Object> params = new HashMap<>();
-        params.put("sCompnyNm", "Company Name");  
+        params.put("sCompnyNm", System.getProperty("store.company.name"));  
         params.put("sBranchNm", (String) p_oNautilus.getBranchConfig("sCompnyNm"));
         params.put("sAddressx", (String) p_oNautilus.getBranchConfig("sAddressx") + ", " + (String) p_oNautilus.getBranchConfig("xTownName"));      
         params.put("sReportNm", System.getProperty("store.report.header"));      
