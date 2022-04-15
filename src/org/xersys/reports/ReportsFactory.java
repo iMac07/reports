@@ -11,6 +11,8 @@ public class ReportsFactory {
                 return new DeliveryAcceptance();
             case "220004": //Branch Inventory
                 return new BranchInventory();
+            case "220011": //Branch Inventory w/o SRP
+                return new BranchInventoryNoSRP();
             default:
                 return null;
         }
