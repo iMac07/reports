@@ -23,8 +23,8 @@ import org.xersys.commander.iface.XReport;
 import org.xersys.commander.util.MiscUtil;
 import org.xersys.commander.util.SQLUtil;
 
-public class DeliveryAcceptance implements XReport{
-    private final String REPORTID = "220002";
+public class PurchaseReturn implements XReport{
+    private final String REPORTID = "220003";
     private final String REPORT_PATH = "/reports/";
     
     private XNautilus p_oNautilus;
@@ -39,7 +39,7 @@ public class DeliveryAcceptance implements XReport{
     private double xOffset = 0; 
     private double yOffset = 0;
     
-    public DeliveryAcceptance(){
+    public PurchaseReturn(){
         _rptparam = new LinkedList();
         _rptparam.add("store.report.id");
         _rptparam.add("store.report.no");
@@ -208,11 +208,10 @@ public class DeliveryAcceptance implements XReport{
         //return null;
         _jrprint = null;
         
-        //String lsCondition = "";
-       
+        //String lsCondition = " ";
         //String lsSQL = MiscUtil.addCondition(getReportSQLMaster(), lsCondition);
-        String lsSQL = getReportSQLMaster();
         
+        String lsSQL = getReportSQLMaster();
         ResultSet rs = p_oNautilus.executeQuery(lsSQL);
         
         //Convert the data-source to JasperReport data-source
@@ -280,41 +279,30 @@ public class DeliveryAcceptance implements XReport{
         return "SELECT" +
                     "  b.sClientNm sField01" +
                     ", a.dTransact sField02" +
-                    ", a.dRefernce sField03" +
-                    ", Date_Format(a.dTransact,'%M %Y') sField06" +
-                    ", a.sReferNox sField05" +
-                    ", d.sBarCodex sField08" +
+                    ", a.sTransNox sField03" +
+                    ", d.sBarCodex sField05" +
                     ", d.sDescript sField04" +
-                    ", d.sBrandCde sField07" +
                     ", c.nQuantity nField01" +
                     ", c.nUnitPrce lField01" +
                     ", (c.nQuantity * c.nUnitPrce) lField02" +
-                    ", CASE cTranStat" +
-                        " WHEN '0' THEN 'OPEN'" +
-                        " WHEN '1' THEN 'CLOSED'" +
-                        " WHEN '2' THEN 'POSTED'" +
-                        " WHEN '3' THEN 'CANCELLED'" +
-                        " WHEN '4' THEN 'VOID'" +
-                        " END sField08" +
-                    ", a.sTransNox sField09" +
-                " FROM PO_Receiving_Master a" +
+                    ", DATE_Format(a.dTransact,'%M %Y') sField06" +
+                    ", d.sBrandCde sField07" +
+                " FROM PO_Return_Master a" +
                         " LEFT JOIN Client_Master b ON a.sSupplier = b.sClientID" +
-                    ", PO_Receiving_Detail c" +
+                    ", PO_Return_Detail c" +
                         " LEFT JOIN Inventory d ON c.sStockIDx = d.sStockIDx" +
                 " WHERE a.sTransNox = c.sTransNox" +
                     " AND a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd"));
     }
+
     private String getReportSQLMaster(){
         return "SELECT" +
                     "  b.sClientNm sField01" +
                     ", a.dTransact sField02" +
                     ", a.sReferNox sField03" +
-                    ", a.sTermCode sField04" +
-                    ", a.nVATRatex nField01" +
-                    ", a.nTWithHld nField02" +
-                    ", a.nTranTotl lField01" +
-                    ", a.nAmtPaidx lField02" +
-                    ", a.nDiscount lField03" +
+                    ", c.sDescript sField04" +
+                    ", SUM(d.nQuantity) nField01" +
+                    ", a.nTranTotl lField02" +
                     ", CASE cTranStat" +
                         " WHEN '0' THEN 'OPEN'" +
                         " WHEN '1' THEN 'CLOSED'" +
@@ -322,18 +310,18 @@ public class DeliveryAcceptance implements XReport{
                         " WHEN '3' THEN 'CANCELLED'" +
                         " WHEN '4' THEN 'VOID'" +
                         " END sField05" +
-                    ", a.sReferNox sField06" +
-                " FROM PO_Receiving_Master a" +
+                " FROM PO_Master a" +
                         " LEFT JOIN Client_Master b ON a.sSupplier = b.sClientID" +
-                    ", PO_Receiving_Detail c" +
-                        " LEFT JOIN Inventory d ON c.sStockIDx = d.sStockIDx" +
-                " WHERE a.sTransNox = c.sTransNox" +
-                    " AND a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
-                    " AND a.dRefernce BETWEEN " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from")+ " 06:59:00" ) +
-                                      " AND " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.thru")+ " 23:59:00" ) +
-                    " GROUP BY a.sReferNox";
+                        " LEFT JOIN Term c ON a.sTermCode = c.sTermCode" +
+                ", PO_Detail d" +
+                " WHERE a.sTransNox = d.sTransNox" +
+                " AND a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
+                " AND a.cTranStat <> 3" +
+                " AND a.dTransact BETWEEN " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from") + " 06:59:00" ) +
+                                " AND " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.thru")+ " 23:59:00" ) +
+                " GROUP BY a.sReferNox";
     }
-    
+
     @Override
     public String getMessage() {
         return p_sMessagex;
