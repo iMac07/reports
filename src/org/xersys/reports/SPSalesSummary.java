@@ -277,7 +277,7 @@ public class SPSalesSummary implements XReport{
     
     private String getReportSQLDetail(){
         return "SELECT" +
-                    "  a.sReferNox sField01" +
+                    "  e.sInvNumbr sField01" +
                     ", a.dTransact sField02" +
                     ", d.sBarCodex sField03" +
                     ", d.sDescript sField04" +
@@ -287,6 +287,9 @@ public class SPSalesSummary implements XReport{
                     ", c.nQuantity * ((c.nUnitPrce) * (c.nDiscount / 100) + c.nAddDiscx)  lField02" +
                     ", (c.nQuantity * c.nUnitPrce) - c.nQuantity * ((c.nUnitPrce) * (c.nDiscount / 100) + c.nAddDiscx) lField03" +
                 " FROM SP_Sales_Master a" +
+                        " LEFT JOIN Sales_Invoice e" +
+                            " ON a.sTransNox = e.sSourceNo" +
+                                " AND e.sSourceCd = 'SO'" +
                     ", SP_Sales_Detail c" +
                     ", Inventory d " +
                 " WHERE a.sTransNox = c.sTransNox" +
@@ -299,12 +302,12 @@ public class SPSalesSummary implements XReport{
         return "SELECT" +
                     "  b.sClientNm sField01" +
                     ", a.dTransact sField02" +
-                    ", a.sReferNox sField03" +
+                    ", c.sInvNumbr sField03" +
                     ", a.nTranTotl lField01" +
                     ", a.nVATAmtxx lField02" +
                     ", (a.nDiscount + a.nAddDiscx) lField03" +
                     ", a.nAmtPaidx lField04" +
-                    ", CASE cTranStat" +
+                    ", CASE a.cTranStat" +
                         " WHEN '0' THEN 'OPEN'" +
                         " WHEN '1' THEN 'CLOSED'" +
                         " WHEN '2' THEN 'POSTED'" +
@@ -312,12 +315,15 @@ public class SPSalesSummary implements XReport{
                         " WHEN '4' THEN 'VOID'" +
                         " END sField04" +
                 " FROM SP_Sales_Master a" +
-                        " LEFT JOIN Client_Master b ON a.sClientID = b.sClientID" +
+                    " LEFT JOIN Client_Master b ON a.sClientID = b.sClientID" +
+                    " LEFT JOIN Sales_Invoice c" +
+                        " ON a.sTransNox = c.sSourceNo" +
+                            " AND c.sSourceCd = 'SO'" +
                 " WHERE a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
-                " AND a.cTranStat <> 3" +
-                " AND a.dTransact BETWEEN " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from") + " 00:00:01" ) +
-                                " AND " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.thru")+ " 23:59:00" ) +
-                " GROUP BY a.sReferNox";
+                    " AND a.cTranStat <> 3" +
+                    " AND a.dTransact BETWEEN " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from") + " 00:00:01" ) +
+                        " AND " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.thru")+ " 23:59:00" ) +
+                " GROUP BY c.sInvNumbr";
     }
 
     @Override
