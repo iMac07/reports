@@ -300,7 +300,7 @@ public class SPSalesSummary implements XReport{
 
     private String getReportSQLMaster(){
         return "SELECT" +
-                    "  b.sClientNm sField01" +
+                    "  c.sClientNm sField01" +
                     ", a.dTransact sField02" +
                     ", c.sInvNumbr sField03" +
                     ", a.nTranTotl lField01" +
