@@ -278,7 +278,7 @@ public class SPSalesSummary implements XReport{
     private String getReportSQLDetail(){
         return "SELECT" +
                     "  e.sInvNumbr sField01" +
-                    ", a.dTransact sField02" +
+                    ", DATE_FORMAT(a.dTransact, '%Y-%m-%d') sField02" +
                     ", d.sBarCodex sField03" +
                     ", d.sDescript sField04" +
                     ", d.sBrandCde sField05" +
