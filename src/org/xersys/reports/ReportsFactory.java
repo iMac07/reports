@@ -13,6 +13,8 @@ public class ReportsFactory {
                 return new PurchaseReturn();
             case "220004": //Branch Inventory
                 return new BranchInventory();
+            case "220009": //Daily Transaction Report
+                return new DailyTransactionReport();
             case "220010": //SP Sales Summary
                 return new SPSalesSummary();
             default:
