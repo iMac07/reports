@@ -2,15 +2,16 @@ package org.xersys.reports;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRResultSetDataSource;
-import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.xersys.commander.iface.XNautilus;
 import org.xersys.commander.iface.XReport;
 import org.xersys.commander.util.SQLUtil;
@@ -149,16 +150,38 @@ public class DailyTransactionReport implements XReport{
     
     private JasperPrint printDetail(){
         System.out.println("Printing Detailed");
-        
-        _jrprint = null;
-        
-        String lsSQL = getReportSQL();
-        ResultSet rs = p_oNautilus.executeQuery(lsSQL);
-        
-        //Convert the data-source to JasperReport data-source
-        JRResultSetDataSource jrRS = new JRResultSetDataSource(rs);
 
-        try {            
+        try {                          
+            _jrprint = null;
+        
+            String lsSQL = getReportSQL();
+            ResultSet rs = p_oNautilus.executeQuery(lsSQL);
+            
+            DTRBean dtr;
+            DTRSPBean sp;
+            ArrayList<DTRBean> datalist = new ArrayList<>();
+            
+            List<DTRSPBean> list = new LinkedList();   
+            
+            while (rs.next()){
+                sp = new DTRSPBean();
+                sp.setbarcodex(rs.getString("sBarCodex"));
+                sp.setdescript(rs.getString("sDescript"));
+                sp.setrefernox(rs.getString("sReferNox"));
+                sp.setquantity(rs.getInt("nQuantity"));
+                sp.setselprice(rs.getDouble("nSelPrice"));
+                sp.setnetsales(rs.getDouble("nNetSales"));
+                
+                list.add(sp);
+
+            }
+            
+            dtr = new DTRBean();
+            dtr.setSubReportBeanList(list);
+            datalist.add(dtr);
+            
+            JRBeanCollectionDataSource data = new JRBeanCollectionDataSource(datalist);
+
             //Create the parameter
             Map<String, Object> params = new HashMap<>();
             params.put("sCompnyNm", System.getProperty("store.company.name"));  
@@ -166,14 +189,13 @@ public class DailyTransactionReport implements XReport{
             params.put("sAddressx", (String) p_oNautilus.getBranchConfig("sAddressx") + ", " + (String) p_oNautilus.getBranchConfig("xTownName"));      
             params.put("sReportNm", System.getProperty("store.report.header"));      
             params.put("sPrintdBy", (String) p_oNautilus.getUserInfo("xClientNm"));
-            params.put("subSPDIR", (String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH +
-                                    "DTR_SP.jasper");
-            params.put("subSPSales", jrRS);
+            params.put("SUBREPORT_DIR", (String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH);
             
             _jrprint = JasperFillManager.fillReport((String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH +
                                                     "DTR.jasper",
-                                                    params);
-        } catch (JRException ex) {
+                                                    params,
+                                                    data);
+        } catch (JRException | SQLException ex) {
             ex.printStackTrace();
         }
         
@@ -201,6 +223,7 @@ public class DailyTransactionReport implements XReport{
                             " ON e.sSourceNo = a.sTransNox" +
                 " WHERE DATE_FORMAT(a.dTransact, '%Y-%m-%d') = '2022-08-02'" +
                     " AND a.cTranStat = '2'" +
+                " HAVING sBarCodex IS NOT NULL" +
                 " UNION SELECT" +
                     "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') dTransact" +
                     ", e.sInvNumbr `sReferNox`" +
@@ -222,7 +245,8 @@ public class DailyTransactionReport implements XReport{
                     ", Client_Master d" +
                 " WHERE a.sClientID = d.sClientID" +
                     " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = '2022-08-04'" +
-                    " AND a.cTranStat = '2'";
+                    " AND a.cTranStat = '2'" +
+                " HAVING sBarCodex IS NOT NULL";
     }
 
     @Override
