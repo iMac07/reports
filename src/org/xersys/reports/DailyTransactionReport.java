@@ -5,12 +5,12 @@ import org.xersys.reports.bean.DTRBean;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRResultSetDataSource;
-import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
@@ -156,7 +156,7 @@ public class DailyTransactionReport implements XReport{
     
     private JasperPrint printDetail(){
         System.out.println("Printing Detailed");
-        
+
         _jrprint = null;
 
         try {     
@@ -223,6 +223,7 @@ public class DailyTransactionReport implements XReport{
             params.put("sAddressx", (String) p_oNautilus.getBranchConfig("sAddressx") + ", " + (String) p_oNautilus.getBranchConfig("xTownName"));      
             params.put("sReportNm", System.getProperty("store.report.header"));      
             params.put("sPrintdBy", (String) p_oNautilus.getUserInfo("xClientNm"));
+
             params.put("subSPDIR", (String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH +
                                     "DTR_SP.jasper");
 
@@ -281,6 +282,7 @@ public class DailyTransactionReport implements XReport{
                             " ON e.sSourceNo = a.sTransNox" +
                 " WHERE DATE_FORMAT(a.dTransact, '%Y-%m-%d') = '2022-08-02'" +
                     " AND a.cTranStat = '2'" +
+                " HAVING sBarCodex IS NOT NULL" +
                 " UNION SELECT" +
                     "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') dTransact" +
                     ", e.sInvNumbr `sReferNox`" +
@@ -302,7 +304,8 @@ public class DailyTransactionReport implements XReport{
                     ", Client_Master d" +
                 " WHERE a.sClientID = d.sClientID" +
                     " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = '2022-08-04'" +
-                    " AND a.cTranStat = '2'";
+                    " AND a.cTranStat = '2'" +
+                " HAVING sBarCodex IS NOT NULL";
     }
 
     @Override
