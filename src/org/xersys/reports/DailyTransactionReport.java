@@ -4,6 +4,7 @@ import org.xersys.reports.bean.DTRSPBean;
 import org.xersys.reports.bean.DTRBean;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -13,11 +14,13 @@ import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.xersys.commander.iface.XNautilus;
 import org.xersys.commander.iface.XReport;
 import org.xersys.commander.util.SQLUtil;
 import org.xersys.reports.bean.DTRJOBean;
 import org.xersys.reports.bean.DTRSum;
+import java.util.List;
 
 public class DailyTransactionReport implements XReport{
     private final String REPORTID = "220009";
@@ -154,15 +157,9 @@ public class DailyTransactionReport implements XReport{
     private JasperPrint printDetail(){
         System.out.println("Printing Detailed");
         
-<<<<<<< Updated upstream
         _jrprint = null;
-        
-        String lsSQL = getReportSQL();
-        ResultSet rs = p_oNautilus.executeQuery(lsSQL);
-        
-        //Convert the data-source to JasperReport data-source
-        JRResultSetDataSource jrRS = new JRResultSetDataSource(rs);
-=======
+
+        try {     
             double spamount = 0.00, joamount = 0.00;
             
             String lsSQL = getSPTranSQL();
@@ -217,11 +214,8 @@ public class DailyTransactionReport implements XReport{
             
             ArrayList<DTRBean> datalist = new ArrayList<>();
             datalist.add(dtr);
-            
             JRBeanCollectionDataSource data = new JRBeanCollectionDataSource(datalist);
->>>>>>> Stashed changes
-
-        try {            
+            
             //Create the parameter
             Map<String, Object> params = new HashMap<>();
             params.put("sCompnyNm", System.getProperty("store.company.name"));  
@@ -231,12 +225,12 @@ public class DailyTransactionReport implements XReport{
             params.put("sPrintdBy", (String) p_oNautilus.getUserInfo("xClientNm"));
             params.put("subSPDIR", (String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH +
                                     "DTR_SP.jasper");
-            params.put("subSPSales", jrRS);
-            
+
             _jrprint = JasperFillManager.fillReport((String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH +
                                                     "DTR.jasper",
-                                                    params);
-        } catch (JRException ex) {
+                                                    params,
+                                                    data);
+        } catch (JRException | SQLException ex) {
             ex.printStackTrace();
         }
         
