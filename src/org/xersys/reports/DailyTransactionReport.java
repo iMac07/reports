@@ -1,5 +1,7 @@
 package org.xersys.reports;
 
+import org.xersys.reports.bean.DTRSPBean;
+import org.xersys.reports.bean.DTRBean;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -14,6 +16,8 @@ import net.sf.jasperreports.engine.JasperReport;
 import org.xersys.commander.iface.XNautilus;
 import org.xersys.commander.iface.XReport;
 import org.xersys.commander.util.SQLUtil;
+import org.xersys.reports.bean.DTRJOBean;
+import org.xersys.reports.bean.DTRSum;
 
 public class DailyTransactionReport implements XReport{
     private final String REPORTID = "220009";
@@ -150,6 +154,7 @@ public class DailyTransactionReport implements XReport{
     private JasperPrint printDetail(){
         System.out.println("Printing Detailed");
         
+<<<<<<< Updated upstream
         _jrprint = null;
         
         String lsSQL = getReportSQL();
@@ -157,6 +162,64 @@ public class DailyTransactionReport implements XReport{
         
         //Convert the data-source to JasperReport data-source
         JRResultSetDataSource jrRS = new JRResultSetDataSource(rs);
+=======
+            double spamount = 0.00, joamount = 0.00;
+            
+            String lsSQL = getSPTranSQL();
+            ResultSet rs = p_oNautilus.executeQuery(lsSQL);
+            
+            //SP Transactions
+            DTRSPBean spbean;
+            List<DTRSPBean> splist = new LinkedList();   
+            while (rs.next()){
+                spbean = new DTRSPBean();
+                spbean.setbarcodex(rs.getString("sBarCodex"));
+                spbean.setdescript(rs.getString("sDescript"));
+                spbean.setrefernox(rs.getString("sReferNox"));
+                spbean.setquantity(rs.getInt("nQuantity"));
+                spbean.setselprice(rs.getDouble("nSelPrice"));
+                spbean.setnetsales(rs.getDouble("nNetSales"));
+                
+                splist.add(spbean);
+                spamount += rs.getDouble("nNetSales");
+            }
+            
+            //JO Transactions
+            lsSQL = getJOTranSQL();
+            rs = p_oNautilus.executeQuery(lsSQL);
+            
+            DTRJOBean jobean;
+            List<DTRJOBean> jolist = new LinkedList();   
+            while (rs.next()){
+                jobean = new DTRJOBean();
+                jobean.settransact(rs.getString("dTransact"));
+                jobean.setrefernox(rs.getString("sReferNox"));
+                jobean.setclientnm(rs.getString("sClientNm"));
+                jobean.setserial01(rs.getString("sSerial01"));
+                jobean.setdescript(rs.getString("sDescript"));
+                jobean.setnetsales(rs.getDouble("nNetSales"));
+                
+                jolist.add(jobean);
+                joamount += rs.getDouble("nNetSales");
+            }
+            
+            //summary
+            DTRSum sumbean = new DTRSum();
+            sumbean.setjoamount(joamount);
+            sumbean.setspamount(spamount);
+            List<DTRSum> sumlist = new LinkedList();
+            sumlist.add(sumbean);
+            
+            DTRBean dtr = new DTRBean();
+            dtr.setsubSPData(splist);
+            dtr.setsubJOData(jolist);
+            dtr.setsubSum(sumlist);
+            
+            ArrayList<DTRBean> datalist = new ArrayList<>();
+            datalist.add(dtr);
+            
+            JRBeanCollectionDataSource data = new JRBeanCollectionDataSource(datalist);
+>>>>>>> Stashed changes
 
         try {            
             //Create the parameter
@@ -180,7 +243,30 @@ public class DailyTransactionReport implements XReport{
         return _jrprint;
     }
     
-    private String getReportSQL(){
+    private String getJOTranSQL(){
+        return "SELECT" +
+                    "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') dTransact" +
+                    ", e.sInvNumbr `sReferNox`" +
+                    ", d.sClientNm" +
+                    ", f.sSerial01" +
+                    ", c.sDescript" +
+                    ", b.nQuantity" +
+                    ", b.nQuantity * ((b.nUnitPrce - (b.nUnitPrce * b.nDiscount)) - b.nAddDiscx) nNetSales" +
+                " FROM Job_Order_Master a" +
+                    " LEFT JOIN Job_Order_Detail b" +
+                        " ON a.sTransNox = b.sTransNox" +
+                    " LEFT JOIN Labor c" +
+                        " ON b.sLaborCde = c.sLaborCde" +
+                    " LEFT JOIN Receipt_Master e" +
+                        " ON e.sSourceNo = a.sTransNox" +
+                    " LEFT JOIN Inv_Serial f" +
+                        " ON a.sSerialID = f.sSerialID" +
+                    ", Client_Master d" +
+                " WHERE a.sClientID = d.sClientID" +
+                    " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = '2022-08-04'";
+    }
+    
+    private String getSPTranSQL(){
         return "SELECT" + 
                     "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') dTransact" +
                     ", e.sInvNumbr `sReferNox`" +
