@@ -1,5 +1,7 @@
 package org.xersys.reports;
 
+import org.xersys.reports.bean.DTRSPBean;
+import org.xersys.reports.bean.DTRBean;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -11,10 +13,14 @@ import java.util.Map;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.xersys.commander.iface.XNautilus;
 import org.xersys.commander.iface.XReport;
 import org.xersys.commander.util.SQLUtil;
+import org.xersys.reports.bean.DTRJOBean;
+import org.xersys.reports.bean.DTRSum;
+import java.util.List;
 
 public class DailyTransactionReport implements XReport{
     private final String REPORTID = "220009";
@@ -151,37 +157,65 @@ public class DailyTransactionReport implements XReport{
     private JasperPrint printDetail(){
         System.out.println("Printing Detailed");
 
-        try {                          
-            _jrprint = null;
-        
-            String lsSQL = getReportSQL();
+        _jrprint = null;
+
+        try {     
+            double spamount = 0.00, joamount = 0.00;
+            
+            String lsSQL = getSPTranSQL();
             ResultSet rs = p_oNautilus.executeQuery(lsSQL);
             
-            DTRBean dtr;
-            DTRSPBean sp;
-            ArrayList<DTRBean> datalist = new ArrayList<>();
-            
-            List<DTRSPBean> list = new LinkedList();   
-            
+            //SP Transactions
+            DTRSPBean spbean;
+            List<DTRSPBean> splist = new LinkedList();   
             while (rs.next()){
-                sp = new DTRSPBean();
-                sp.setbarcodex(rs.getString("sBarCodex"));
-                sp.setdescript(rs.getString("sDescript"));
-                sp.setrefernox(rs.getString("sReferNox"));
-                sp.setquantity(rs.getInt("nQuantity"));
-                sp.setselprice(rs.getDouble("nSelPrice"));
-                sp.setnetsales(rs.getDouble("nNetSales"));
+                spbean = new DTRSPBean();
+                spbean.setbarcodex(rs.getString("sBarCodex"));
+                spbean.setdescript(rs.getString("sDescript"));
+                spbean.setrefernox(rs.getString("sReferNox"));
+                spbean.setquantity(rs.getInt("nQuantity"));
+                spbean.setselprice(rs.getDouble("nSelPrice"));
+                spbean.setnetsales(rs.getDouble("nNetSales"));
                 
-                list.add(sp);
-
+                splist.add(spbean);
+                spamount += rs.getDouble("nNetSales");
             }
             
-            dtr = new DTRBean();
-            dtr.setSubReportBeanList(list);
-            datalist.add(dtr);
+            //JO Transactions
+            lsSQL = getJOTranSQL();
+            rs = p_oNautilus.executeQuery(lsSQL);
             
+            DTRJOBean jobean;
+            List<DTRJOBean> jolist = new LinkedList();   
+            while (rs.next()){
+                jobean = new DTRJOBean();
+                jobean.settransact(rs.getString("dTransact"));
+                jobean.setrefernox(rs.getString("sReferNox"));
+                jobean.setclientnm(rs.getString("sClientNm"));
+                jobean.setserial01(rs.getString("sSerial01"));
+                jobean.setdescript(rs.getString("sDescript"));
+                jobean.setnetsales(rs.getDouble("nNetSales"));
+                
+                jolist.add(jobean);
+                joamount += rs.getDouble("nNetSales");
+            }
+            
+            //summary
+            DTRSum sumbean = new DTRSum();
+            sumbean.setjoamount(joamount);
+            sumbean.setspamount(spamount);
+            List<DTRSum> sumlist = new LinkedList();
+            sumlist.add(sumbean);
+            
+            DTRBean dtr = new DTRBean();
+            dtr.setsubSPData(splist);
+            dtr.setsubJOData(jolist);
+            dtr.setsubSum(sumlist);
+            
+            ArrayList<DTRBean> datalist = new ArrayList<>();
+            datalist.add(dtr);
             JRBeanCollectionDataSource data = new JRBeanCollectionDataSource(datalist);
-
+            
             //Create the parameter
             Map<String, Object> params = new HashMap<>();
             params.put("sCompnyNm", System.getProperty("store.company.name"));  
@@ -189,8 +223,10 @@ public class DailyTransactionReport implements XReport{
             params.put("sAddressx", (String) p_oNautilus.getBranchConfig("sAddressx") + ", " + (String) p_oNautilus.getBranchConfig("xTownName"));      
             params.put("sReportNm", System.getProperty("store.report.header"));      
             params.put("sPrintdBy", (String) p_oNautilus.getUserInfo("xClientNm"));
-            params.put("SUBREPORT_DIR", (String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH);
-            
+
+            params.put("subSPDIR", (String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH +
+                                    "DTR_SP.jasper");
+
             _jrprint = JasperFillManager.fillReport((String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH +
                                                     "DTR.jasper",
                                                     params,
@@ -202,7 +238,30 @@ public class DailyTransactionReport implements XReport{
         return _jrprint;
     }
     
-    private String getReportSQL(){
+    private String getJOTranSQL(){
+        return "SELECT" +
+                    "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') dTransact" +
+                    ", e.sInvNumbr `sReferNox`" +
+                    ", d.sClientNm" +
+                    ", f.sSerial01" +
+                    ", c.sDescript" +
+                    ", b.nQuantity" +
+                    ", b.nQuantity * ((b.nUnitPrce - (b.nUnitPrce * b.nDiscount)) - b.nAddDiscx) nNetSales" +
+                " FROM Job_Order_Master a" +
+                    " LEFT JOIN Job_Order_Detail b" +
+                        " ON a.sTransNox = b.sTransNox" +
+                    " LEFT JOIN Labor c" +
+                        " ON b.sLaborCde = c.sLaborCde" +
+                    " LEFT JOIN Receipt_Master e" +
+                        " ON e.sSourceNo = a.sTransNox" +
+                    " LEFT JOIN Inv_Serial f" +
+                        " ON a.sSerialID = f.sSerialID" +
+                    ", Client_Master d" +
+                " WHERE a.sClientID = d.sClientID" +
+                    " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = '2022-08-04'";
+    }
+    
+    private String getSPTranSQL(){
         return "SELECT" + 
                     "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') dTransact" +
                     ", e.sInvNumbr `sReferNox`" +
