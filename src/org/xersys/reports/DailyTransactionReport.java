@@ -5,15 +5,12 @@ import org.xersys.reports.bean.DTRBean;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.xersys.commander.iface.XNautilus;
 import org.xersys.commander.iface.XReport;
@@ -204,6 +201,9 @@ public class DailyTransactionReport implements XReport{
             DTRSum sumbean = new DTRSum();
             sumbean.setjoamount(joamount);
             sumbean.setspamount(spamount);
+            sumbean.setadvancep(0.00);
+            sumbean.setdadvance(0.00);
+
             List<DTRSum> sumlist = new LinkedList();
             sumlist.add(sumbean);
             
