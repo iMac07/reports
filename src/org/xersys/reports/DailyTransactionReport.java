@@ -1,5 +1,6 @@
 package org.xersys.reports;
 
+import java.io.IOException;
 import org.xersys.reports.bean.DTRSPBean;
 import org.xersys.reports.bean.DTRBean;
 import java.sql.ResultSet;
@@ -18,6 +19,14 @@ import org.xersys.commander.util.SQLUtil;
 import org.xersys.reports.bean.DTRJOBean;
 import org.xersys.reports.bean.DTRSum;
 import java.util.List;
+import javafx.event.EventHandler;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.input.MouseEvent;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 public class DailyTransactionReport implements XReport{
     private final String REPORTID = "220009";
@@ -31,6 +40,9 @@ public class DailyTransactionReport implements XReport{
     
     private JasperPrint _jrprint;
     private LinkedList _rptparam = null;
+    
+    private double xOffset = 0; 
+    private double yOffset = 0;
     
     public DailyTransactionReport(){
         _rptparam = new LinkedList();
@@ -76,8 +88,53 @@ public class DailyTransactionReport implements XReport{
     
     @Override
     public boolean getParam() {
-        //dito lalabas yung criteria form pagkinakailangan
-        return true;
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("DateSingleCriteria.fxml"));
+        fxmlLoader.setLocation(getClass().getResource("DateSingleCriteria.fxml"));
+
+        DateSingleCriteriaController instance = new DateSingleCriteriaController();
+        instance.setNautilus(p_oNautilus);
+        
+        try {
+            
+            fxmlLoader.setController(instance);
+            Parent parent = fxmlLoader.load();
+            Stage stage = new Stage();
+
+            /*SET FORM MOVABLE*/
+            parent.setOnMousePressed(new EventHandler<MouseEvent>() {
+                @Override
+                public void handle(MouseEvent event) {
+                    xOffset = event.getSceneX();
+                    yOffset = event.getSceneY();
+                }
+            });
+            parent.setOnMouseDragged(new EventHandler<MouseEvent>() {
+                @Override
+                public void handle(MouseEvent event) {
+                    stage.setX(event.getScreenX() - xOffset);
+                    stage.setY(event.getScreenY() - yOffset);
+                }
+            });
+            /*END SET FORM MOVABLE*/
+
+            Scene scene = new Scene(parent);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initStyle(StageStyle.UNDECORATED);
+            stage.setAlwaysOnTop(true);
+            stage.setScene(scene);
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+            p_sMessagex = e.getMessage();
+            return false;
+        }
+        
+        if (!instance.isCancelled()){
+            System.setProperty("store.report.criteria.date.from", instance.getDateFrom());
+            return true;
+        }
+        
+        return false; 
     }
 
     @Override
@@ -223,6 +280,7 @@ public class DailyTransactionReport implements XReport{
             params.put("sAddressx", (String) p_oNautilus.getBranchConfig("sAddressx") + ", " + (String) p_oNautilus.getBranchConfig("xTownName"));      
             params.put("sReportNm", System.getProperty("store.report.header"));      
             params.put("sPrintdBy", (String) p_oNautilus.getUserInfo("xClientNm"));
+            params.put("sReportDt", SQLUtil.dateFormat(SQLUtil.toDate(System.getProperty("store.report.criteria.date.from"), SQLUtil.FORMAT_SHORT_DATE), SQLUtil.FORMAT_MEDIUM_DATE));
 
             params.put("subSPDIR", (String) p_oNautilus.getAppConfig("sApplPath") + REPORT_PATH +
                                     "DTR_SP.jasper");
@@ -258,7 +316,7 @@ public class DailyTransactionReport implements XReport{
                         " ON a.sSerialID = f.sSerialID" +
                     ", Client_Master d" +
                 " WHERE a.sClientID = d.sClientID" +
-                    " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = '2022-08-04'";
+                    " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from"));
     }
     
     private String getSPTranSQL(){
@@ -280,7 +338,7 @@ public class DailyTransactionReport implements XReport{
                             " ON b.sStockIDx = c.sStockIDx" +
                     " LEFT JOIN Sales_Invoice e" +
                             " ON e.sSourceNo = a.sTransNox" +
-                " WHERE DATE_FORMAT(a.dTransact, '%Y-%m-%d') = '2022-08-02'" +
+                " WHERE DATE_FORMAT(a.dTransact, '%Y-%m-%d') = " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from")) +
                     " AND a.cTranStat = '2'" +
                 " HAVING sBarCodex IS NOT NULL" +
                 " UNION SELECT" +
@@ -303,7 +361,7 @@ public class DailyTransactionReport implements XReport{
                             " ON e.sSourceNo = a.sTransNox" +
                     ", Client_Master d" +
                 " WHERE a.sClientID = d.sClientID" +
-                    " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = '2022-08-04'" +
+                    " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from")) +
                     " AND a.cTranStat = '2'" +
                 " HAVING sBarCodex IS NOT NULL";
     }
