@@ -150,6 +150,7 @@ public class BranchInventory implements XReport{
         
         _jrprint = null;
         
+        System.out.println(getReportSQL());
         ResultSet rs = p_oNautilus.executeQuery(getReportSQL());
         
         //Convert the data-source to JasperReport data-source
@@ -179,7 +180,7 @@ public class BranchInventory implements XReport{
         return "SELECT" +
                     "  b.sBarCodex sField01" +
                     ", b.sDescript sField02" +
-                    ", c.sDescript sField03" +
+                    ", IFNULL(c.sDescript, '') sField03" +
                     ", a.cClassify sField04" +
                     ", a.nMaxLevel nField01" +
                     ", a.nMinLevel nField02" +
@@ -187,11 +188,13 @@ public class BranchInventory implements XReport{
                     ", a.nQtyOnHnd nField03" +
                     ", b.nUnitPrce lField02" +	
                 " FROM Inv_Master a" +
-                    " LEFT JOIN Inventory b ON a.sStockIDx = b.sStockIDx" +
+                    ", Inventory b" +
                     " LEFT JOIN Brand c ON b.sBrandCde = c.sBrandCde AND c.sInvTypCd = 'SP'" +
-                " WHERE a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
+                " WHERE a.sStockIDx = b.sStockIDx" +
+                    " AND a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
                     " AND a.cRecdStat = '1'" +
-                " ORDER BY a.nQtyOnHnd DESC, c.sDescript, b.sBarCodex, b.sDescript";
+                    " AND a.nQtyOnHnd > 0" +
+                " ORDER BY b.sBrandCde, c.sDescript, a.nQtyOnHnd";
     }
 
     @Override

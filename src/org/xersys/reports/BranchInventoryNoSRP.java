@@ -191,6 +191,7 @@ public class BranchInventoryNoSRP implements XReport{
                     " LEFT JOIN Brand c ON b.sBrandCde = c.sBrandCde AND c.sInvTypCd = 'SP'" +
                 " WHERE a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
                     " AND a.cRecdStat = '1'" +
+                    " AND b.cRecdStat = '1'" +
                 " HAVING lField01 <= 0.00" +
                 " ORDER BY a.nQtyOnHnd DESC, c.sDescript, b.sBarCodex, b.sDescript";
     }
