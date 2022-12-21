@@ -2,10 +2,11 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group name="kakarot"/>
         <group/>
-        <group name="kakarot">
-            <file>file:/D:/daedalus/reports/src/org/xersys/reports/bean/DTRSum.java</file>
+        <group name="daedalus">
             <file>file:/D:/daedalus/reports/src/org/xersys/reports/DailyTransactionReport.java</file>
+            <file>file:/D:/daedalus/reports/src/org/xersys/reports/BranchInventory.java</file>
         </group>
     </open-files>
 </project-private>

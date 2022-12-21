@@ -248,10 +248,14 @@ public class DailyTransactionReport implements XReport{
                 jobean.setclientnm(rs.getString("sClientNm"));
                 jobean.setserial01(rs.getString("sSerial01"));
                 jobean.setdescript(rs.getString("sDescript"));
-                jobean.setnetsales(rs.getDouble("nNetSales"));
+                if (rs.getString("cTranStat").equals("4")){
+                    jobean.setnetsales(0.00);
+                } else{
+                    jobean.setnetsales(rs.getDouble("nNetSales"));
+                    joamount += rs.getDouble("nNetSales");
+                }
                 
                 jolist.add(jobean);
-                joamount += rs.getDouble("nNetSales");
             }
             
             //summary
@@ -299,12 +303,13 @@ public class DailyTransactionReport implements XReport{
     private String getJOTranSQL(){
         return "SELECT" +
                     "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') dTransact" +
-                    ", e.sInvNumbr `sReferNox`" +
+                    ", IFNULL(e.sInvNumbr, '') `sReferNox`" +
                     ", d.sClientNm" +
                     ", f.sSerial01" +
                     ", c.sDescript" +
                     ", b.nQuantity" +
-                    ", b.nQuantity * ((b.nUnitPrce - (b.nUnitPrce * b.nDiscount)) - b.nAddDiscx) nNetSales" +
+                    ", b.nQuantity * ((b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100)) - b.nAddDiscx) nNetSales" +
+                    ", a.cTranStat" +
                 " FROM Job_Order_Master a" +
                     " LEFT JOIN Job_Order_Detail b" +
                         " ON a.sTransNox = b.sTransNox" +
@@ -316,18 +321,19 @@ public class DailyTransactionReport implements XReport{
                         " ON a.sSerialID = f.sSerialID" +
                     ", Client_Master d" +
                 " WHERE a.sClientID = d.sClientID" +
-                    " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from"));
+                    " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from")) +
+                    " AND ((a.cTranstat <> '3' AND a.nTranTotl <= a.nAmtPaidx) OR a.cTranstat = '4')";
     }
     
     private String getSPTranSQL(){
         return "SELECT" + 
                     "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') dTransact" +
-                    ", e.sInvNumbr `sReferNox`" +
+                    ", IFNULL(e.sInvNumbr, '') `sReferNox`" +
                     ", c.sBarCodex" +
                     ", c.sDescript" +
                     ", b.nQuantity" +
                     ", b.nUnitPrce `nSelPrice`" +
-                    ", b.nQuantity * ((b.nUnitPrce - (b.nUnitPrce * b.nDiscount)) - b.nAddDiscx) `nNetSales`" +
+                    ", b.nQuantity * (b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100) - b.nAddDiscx) `nNetSales`" +
                     ", a.nAmtPaidx" +
                     ", a.cTranStat" +
                     ", a.sTransNox" +
@@ -343,12 +349,12 @@ public class DailyTransactionReport implements XReport{
                 " HAVING sBarCodex IS NOT NULL" +
                 " UNION SELECT" +
                     "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') dTransact" +
-                    ", e.sInvNumbr `sReferNox`" +
+                    ", IFNULL(e.sInvNumbr, '') `sReferNox`" +
                     ", c.sBarCodex" +
                     ", c.sDescript" +
                     ", b.nQuantity" +
                     ", b.nUnitPrce `nSelPrice`" +
-                    ", b.nQuantity * ((b.nUnitPrce - (b.nUnitPrce * b.nDiscount)) - b.nAddDiscx) `nNetSales`" +
+                    ", b.nQuantity * (b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100) - b.nAddDiscx) `nNetSales`" +
                     ", a.nPartPaid nAmtPaidx" +
                     ", a.cTranStat" +
                     ", a.sTransNox" +
@@ -362,7 +368,7 @@ public class DailyTransactionReport implements XReport{
                     ", Client_Master d" +
                 " WHERE a.sClientID = d.sClientID" +
                     " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from")) +
-                    " AND a.cTranStat = '2'" +
+                    " AND ((a.cTranstat <> '3' AND a.nTranTotl <= a.nAmtPaidx) OR a.cTranstat = '4')" +
                 " HAVING sBarCodex IS NOT NULL";
     }
 
