@@ -229,6 +229,7 @@ public class DailyTransactionReport implements XReport{
                 spbean.setrefernox(rs.getString("sReferNox"));
                 spbean.setquantity(rs.getInt("nQuantity"));
                 spbean.setselprice(rs.getDouble("nSelPrice"));
+                spbean.setdiscount(rs.getDouble("xDiscount"));
                 spbean.setnetsales(rs.getDouble("nNetSales"));
                 
                 splist.add(spbean);
@@ -333,6 +334,7 @@ public class DailyTransactionReport implements XReport{
                     ", c.sDescript" +
                     ", b.nQuantity" +
                     ", b.nUnitPrce `nSelPrice`" +
+                    ", (b.nUnitPrce * b.nDiscount / 100) `xDiscount`" +
                     ", b.nQuantity * (b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100) - b.nAddDiscx) `nNetSales`" +
                     ", a.nAmtPaidx" +
                     ", a.cTranStat" +
@@ -354,6 +356,7 @@ public class DailyTransactionReport implements XReport{
                     ", c.sDescript" +
                     ", b.nQuantity" +
                     ", b.nUnitPrce `nSelPrice`" +
+                    ", (b.nUnitPrce * b.nDiscount / 100) `xDiscount`" +
                     ", b.nQuantity * (b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100) - b.nAddDiscx) `nNetSales`" +
                     ", a.nPartPaid nAmtPaidx" +
                     ", a.cTranStat" +
