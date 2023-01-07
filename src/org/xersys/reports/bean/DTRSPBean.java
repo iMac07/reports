@@ -8,6 +8,7 @@ public class DTRSPBean {
     double selprice;
     double netsales;
     double discount;
+    double discrate;
     
     public String getbarcodex(){
         return barcodex;
@@ -55,6 +56,14 @@ public class DTRSPBean {
     
     public void setdiscount(double fnValue){
         discount = fnValue;
+    }
+    
+    public double getdiscrate(){
+        return discrate;
+    }
+    
+    public void setdiscrate(double fnValue){
+        discrate = fnValue;
     }
     
     public double getnetsales(){
