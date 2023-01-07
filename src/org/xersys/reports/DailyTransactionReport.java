@@ -220,6 +220,7 @@ public class DailyTransactionReport implements XReport{
             ResultSet rs = p_oNautilus.executeQuery(lsSQL);
             
             //SP Transactions
+            double lnTrans;
             DTRSPBean spbean;
             List<DTRSPBean> splist = new LinkedList();   
             while (rs.next()){
@@ -230,10 +231,18 @@ public class DailyTransactionReport implements XReport{
                 spbean.setquantity(rs.getInt("nQuantity"));
                 spbean.setselprice(rs.getDouble("nSelPrice"));
                 spbean.setdiscount(rs.getDouble("xDiscount"));
-                spbean.setnetsales(rs.getDouble("nNetSales"));
+                spbean.setdiscrate(rs.getDouble("nDiscount"));
+                //spbean.setnetsales(rs.getDouble("nNetSales"));
+                
+                //get discounts
+                lnTrans = spbean.getselprice() - (spbean.getselprice() * spbean.getdiscrate() / 100);
+                lnTrans = RoundUp(lnTrans) - spbean.getdiscount();
+                lnTrans = spbean.getquantity() * lnTrans;
+                spbean.setnetsales(lnTrans);
                 
                 splist.add(spbean);
-                spamount += rs.getDouble("nNetSales");
+                //spamount += rs.getDouble("nNetSales");
+                spamount += lnTrans;
             }
             
             //JO Transactions
@@ -334,18 +343,20 @@ public class DailyTransactionReport implements XReport{
                     ", c.sDescript" +
                     ", b.nQuantity" +
                     ", b.nUnitPrce `nSelPrice`" +
-                    ", (b.nUnitPrce * b.nDiscount / 100) `xDiscount`" +
+                    ", b.nAddDiscx `xDiscount`" +
+                    ", b.nDiscount `nDiscount`" +
                     ", b.nQuantity * (b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100) - b.nAddDiscx) `nNetSales`" +
                     ", a.nAmtPaidx" +
                     ", a.cTranStat" +
                     ", a.sTransNox" +
                 " FROM SP_Sales_Master a" +
                     " LEFT JOIN SP_Sales_Detail b" +
-                            " ON a.sTransNox = b.sTransNox" +
+                        " ON a.sTransNox = b.sTransNox" +
                     " LEFT JOIN Inventory c" +
-                            " ON b.sStockIDx = c.sStockIDx" +
+                        " ON b.sStockIDx = c.sStockIDx" +
                     " LEFT JOIN Sales_Invoice e" +
-                            " ON e.sSourceNo = a.sTransNox" +
+                        " ON e.sSourceNo = a.sTransNox" +
+                            " AND e.sSourceCd = 'SO'" +
                 " WHERE DATE_FORMAT(a.dTransact, '%Y-%m-%d') = " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from")) +
                     " AND a.cTranStat = '2'" +
                 " HAVING sBarCodex IS NOT NULL" +
@@ -356,18 +367,20 @@ public class DailyTransactionReport implements XReport{
                     ", c.sDescript" +
                     ", b.nQuantity" +
                     ", b.nUnitPrce `nSelPrice`" +
-                    ", (b.nUnitPrce * b.nDiscount / 100) `xDiscount`" +
+                    ", b.nAddDiscx `xDiscount`" +
+                    ", b.nDiscount `nDiscount`" +
                     ", b.nQuantity * (b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100) - b.nAddDiscx) `nNetSales`" +
                     ", a.nPartPaid nAmtPaidx" +
                     ", a.cTranStat" +
                     ", a.sTransNox" +
                 " FROM Job_Order_Master a" +
                     " LEFT JOIN Job_Order_Parts b" +
-                            " ON a.sTransNox = b.sTransNox" +
+                        " ON a.sTransNox = b.sTransNox" +
                     " LEFT JOIN Inventory c" +
-                            " ON b.sStockIDx = c.sStockIDx" +
+                        " ON b.sStockIDx = c.sStockIDx" +
                     " LEFT JOIN Sales_Invoice e" +
-                            " ON e.sSourceNo = a.sTransNox" +
+                        " ON e.sSourceNo = a.sTransNox" +
+                            " AND e.sSourceCd = 'JO'" +
                     ", Client_Master d" +
                 " WHERE a.sClientID = d.sClientID" +
                     " AND DATE_FORMAT(a.dTransact, '%Y-%m-%d') = " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from")) +
@@ -378,5 +391,23 @@ public class DailyTransactionReport implements XReport{
     @Override
     public String getMessage() {
         return p_sMessagex;
+    }
+    
+    //round up to the nearest 50 cents
+    private static double RoundUp(double fnValue){
+        String doubleAsString = String.valueOf(fnValue);
+        int indexOfDecimal = doubleAsString.indexOf(".");
+        
+        double lnWhole = Double.valueOf(doubleAsString.substring(0, indexOfDecimal));
+        double lnCents = Double.valueOf(doubleAsString.substring(indexOfDecimal));
+        
+        if (lnCents == 0.00) 
+            lnCents = 0.00;    
+        else if (lnCents < 0.50) 
+            lnCents = 0.50;
+        else
+            lnCents = 1.00;
+        
+        return lnWhole + lnCents;
     }
 }
