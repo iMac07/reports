@@ -17,6 +17,8 @@ public class ReportsFactory {
                 return new DailyTransactionReport();
             case "220010": //SP Sales Summary
                 return new SPSalesSummary();
+            case "230001": //Branch Inventory ABC
+                return new ABCInventory();
             default:
                 return null;
         }

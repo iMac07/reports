@@ -5,8 +5,10 @@
         <group name="kakarot"/>
         <group/>
         <group name="daedalus">
-            <file>file:/D:/MTC%20Files/Programs/Java/icarus/reports/src/org/xersys/reports/DailyTransactionReport.java</file>
-            <file>file:/D:/MTC%20Files/Programs/Java/icarus/reports/src/org/xersys/reports/bean/DTRSPBean.java</file>
+            <file>file:/D:/MTC%20Files/Programs/Java/icarus/reports/src/org/xersys/reports/BranchInventory.java</file>
+            <file>file:/D:/MTC%20Files/Programs/Java/icarus/reports/src/org/xersys/reports/ReportsFactory.java</file>
+            <file>file:/D:/MTC%20Files/Programs/Java/icarus/reports/src/org/xersys/reports/BranchInventoryorig.java</file>
+            <file>file:/D:/MTC%20Files/Programs/Java/icarus/reports/src/org/xersys/reports/ABCInventory.java</file>
         </group>
     </open-files>
 </project-private>
