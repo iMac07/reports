@@ -188,9 +188,19 @@ public class ABCInventory implements XReport{
                     ", a.nQtyOnHnd nField03" +
                     ", b.nUnitPrce lField02" +	
                     ", a.nAvgMonSl nField04" +
+                    ", IF(a.nMaxLevel - (IFNULL(a.nQtyOnHnd, 0) + IFNULL(d.nQuantity, 0)) < 0, 0, a.nMaxLevel - (IFNULL(a.nQtyOnHnd, 0) + IFNULL(d.nQuantity, 0)))  nField05" +
                 " FROM Inv_Master a" +
+                    " LEFT JOIN (SELECT" +
+                                    "  a.sStockIDx" +
+                                    ", SUM(a.nQuantity - a.nCancelld - a.nReceived) nQuantity" +
+                                " FROM PO_Detail a" +
+                                    ", PO_Master b" +
+                                " WHERE a.sTransNox = b.sTransNox" +
+                                    " AND b.cTranStat IN ('1', '2')" +
+                                " GROUP BY a.sStockIDx) d" +
+                        " ON a.sStockIDx = d.sStockIDx" +
                     ", Inventory b" +
-                    " LEFT JOIN Brand c ON b.sBrandCde = c.sBrandCde AND c.sInvTypCd = 'SP'" +
+                        " LEFT JOIN Brand c ON b.sBrandCde = c.sBrandCde AND c.sInvTypCd = 'SP'" +
                 " WHERE a.sStockIDx = b.sStockIDx" +
                     " AND a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
                     " AND a.cRecdStat = '1'" +
