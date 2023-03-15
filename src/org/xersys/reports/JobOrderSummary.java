@@ -24,7 +24,7 @@ import org.xersys.commander.util.MiscUtil;
 import org.xersys.commander.util.SQLUtil;
 
 public class JobOrderSummary implements XReport{
-    private final String REPORTID = "220001";
+    private final String REPORTID = "230002";
     private final String REPORT_PATH = "/reports/";
     
     private XNautilus p_oNautilus;
@@ -205,13 +205,13 @@ public class JobOrderSummary implements XReport{
     
     private JasperPrint printSummary(){
         System.out.println("Printing Summary");
-        //return null;
         _jrprint = null;
         
-        //String lsCondition = " ";
-        //String lsSQL = MiscUtil.addCondition(getReportSQLMaster(), lsCondition);
+        String lsCondition = "a.dTransact BETWEEN " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from") + " 00:00:01") +
+                                " AND " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.thru") + " 23:59:59");
         
-        String lsSQL = getReportSQLMaster();
+        String lsSQL = MiscUtil.addCondition(getReportSQLMaster(), lsCondition);
+        
         ResultSet rs = p_oNautilus.executeQuery(lsSQL);
         
         //Convert the data-source to JasperReport data-source
@@ -243,8 +243,8 @@ public class JobOrderSummary implements XReport{
         System.out.println("Printing Detailed");
         _jrprint = null;
         
-        String lsCondition = "a.dTransact BETWEEN " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from")) +
-                                " AND " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.thru"));
+        String lsCondition = "a.dTransact BETWEEN " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from") + " 00:00:01") +
+                                " AND " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.thru") + " 23:59:59");
         
         String lsSQL = MiscUtil.addCondition(getReportSQLDetail(), lsCondition);
         
@@ -277,49 +277,41 @@ public class JobOrderSummary implements XReport{
     
     private String getReportSQLDetail(){
         return "SELECT" +
-                    "  b.sClientNm sField01" +
-                    ", a.dTransact sField02" +
-                    ", a.sReferNox sField03" +
-                    ", d.sBarCodex sField04" +
-                    ", d.sDescript sField05" +
-                    ", c.nQuantity nField01" +
-                    ", c.nUnitPrce lField01" +
-                    ", (c.nQuantity * c.nUnitPrce) lField02" +
-                    ", DATE_Format(a.dTransact,'%M %Y') sField06" +
-                    ", d.sBrandCde sField07" +
-                " FROM PO_Master a" +
-                        " LEFT JOIN Client_Master b ON a.sSupplier = b.sClientID" +
-                    ", PO_Detail c" +
-                        " LEFT JOIN Inventory d ON c.sStockIDx = d.sStockIDx" +
-                " WHERE a.sTransNox = c.sTransNox" +
-                    " AND a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd"));
+                    "  DATE_FORMAT(a.dTransact, '%Y-%m-%d') sField01" +
+                    ", d.sClientNm sField02" +	
+                    ", f.sClientNm sField03" +
+                    ", c.sDescript sField04" +
+                    ", b.nQuantity nField01" +
+                    ", (b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100) - b.nAddDiscx) lField01" +
+                    ", b.nQuantity * (b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100) - b.nAddDiscx) lField02" +
+                    ", b.nUnitPrce" +
+                    ", b.nDiscount" +
+                    ", b.nAddDiscx" +	
+                    ", e.sSerial01" +
+                " FROM Job_Order_Master a" +
+                    " LEFT JOIN Job_Order_Detail b ON a.sTransNox = b.sTransNox" +
+                    " LEFT JOIN Labor c ON b.sLaborCde = c.sLaborCde" +
+                    " LEFT JOIN Client_Master d ON a.sMechanic = d.sClientID" +
+                    " LEFT JOIN Inv_Serial e ON a.sSerialID = e.sSerialID" +
+                    " LEFT JOIN Client_Master f ON a.sClientID = f.sClientID" +
+                " WHERE LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
+                    " AND a.cTranStat = '2'";
     }
 
     private String getReportSQLMaster(){
-        return "SELECT" +
-                    "  b.sClientNm sField01" +
-                    ", a.dTransact sField02" +
-                    ", a.sReferNox sField03" +
-                    ", c.sDescript sField04" +
-                    ", SUM(d.nQuantity) nField01" +
-                    ", a.nTranTotl lField02" +
-                    ", CASE cTranStat" +
-                        " WHEN '0' THEN 'OPEN'" +
-                        " WHEN '1' THEN 'CLOSED'" +
-                        " WHEN '2' THEN 'POSTED'" +
-                        " WHEN '3' THEN 'CANCELLED'" +
-                        " WHEN '4' THEN 'VOID'" +
-                        " END sField05" +
-                " FROM PO_Master a" +
-                        " LEFT JOIN Client_Master b ON a.sSupplier = b.sClientID" +
-                        " LEFT JOIN Term c ON a.sTermCode = c.sTermCode" +
-                ", PO_Detail d" +
-                " WHERE a.sTransNox = d.sTransNox" +
-                " AND a.sBranchCd = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
-                " AND a.cTranStat <> 3" +
-                " AND a.dTransact BETWEEN " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.from") + " 06:59:00" ) +
-                                " AND " + SQLUtil.toSQL(System.getProperty("store.report.criteria.date.thru")+ " 23:59:00" ) +
-                " GROUP BY a.sReferNox";
+        return "SELECT" + 
+                    "  d.sClientNm sField01" + 	
+                    ", COUNT(a.sTransNox) nField01" +
+                    ", SUM(b.nQuantity * (b.nUnitPrce - (b.nUnitPrce * b.nDiscount / 100) - b.nAddDiscx)) lField01" + 
+                " FROM Job_Order_Master a" + 
+                    " LEFT JOIN Job_Order_Detail b ON a.sTransNox = b.sTransNox" + 
+                    " LEFT JOIN Labor c ON b.sLaborCde = c.sLaborCde" + 
+                    " LEFT JOIN Client_Master d ON a.sMechanic = d.sClientID" + 
+                    " LEFT JOIN Inv_Serial e ON a.sSerialID = e.sSerialID" + 
+                    " LEFT JOIN Client_Master f ON a.sClientID = f.sClientID" + 
+                " WHERE LEFT(a.sTransNox, 4) = " + SQLUtil.toSQL((String) p_oNautilus.getBranchConfig("sBranchCd")) +
+                    " AND a.cTranStat = '2'" +
+                " GROUP BY sField01";
     }
 
     @Override
@@ -327,4 +319,3 @@ public class JobOrderSummary implements XReport{
         return p_sMessagex;
     }
 }
-

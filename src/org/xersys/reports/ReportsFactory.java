@@ -19,6 +19,8 @@ public class ReportsFactory {
                 return new SPSalesSummary();
             case "230001": //Branch Inventory ABC
                 return new ABCInventory();
+            case "230002": //JO Summary per Mechanic
+                return new JobOrderSummary();
             default:
                 return null;
         }
